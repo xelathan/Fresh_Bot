@@ -25,8 +25,8 @@ module.exports = {
             let song = {};
 
             if(ytdl.validateURL(args[0])) {
-                const songInfo = await ytdl.getInfo(args[0]);;
-                song = {title: songInfo.videoDetails.title, url: songInfo.videoDetails.video_url};
+                const songInfo = await ytdl.getInfo(args[0]);
+                song = {title: songInfo.videoDetails.title, url: songInfo.videoDetails.video_url, lengthSeconds: songInfo.videoDetails.lengthSeconds};
             } else {
                 const videoFinder = async (query) => {
                     const videoResult = await ytSearch(query);
@@ -36,7 +36,7 @@ module.exports = {
                 const video = await videoFinder(args.join(' '));
 
                 if(video) {
-                    song = {title: video.title, url: video.url};
+                    song = {title: video.title, url: video.url, lengthSeconds: video.seconds};
                 } else {
                     message.channel.send('No video results found.');
                 }
@@ -52,7 +52,7 @@ module.exports = {
     
                 queue.set(message.guild.id, queueConstructor);
                 queueConstructor.songs.push(song)
-    
+
                 try {
                     const connection = await voiceChannel.join();
                     queueConstructor.connection = connection;
@@ -135,14 +135,22 @@ const get_queue = (message, serverQueue, Discord) => {
     .setTitle('Queue')
 
     for (let i = 0; i < serverQueue.songs.length; i++) {
+        const timeFormat = time_format(serverQueue.songs[i].lengthSeconds)
         if(i == 0) {
-            embed.addFields({name: '***Now Playing***:', value: `${serverQueue.songs[i].title}\n${serverQueue.songs[i].url}`});
+            embed.addFields({name: '***Now Playing***:', value: `${serverQueue.songs[i].title}\n${serverQueue.songs[i].url}\nDuration: ${timeFormat}\n`});
         } else {
-            mystring += `${i}. ${serverQueue.songs[i].title}\n\n`;
+            mystring += `${i}. ${serverQueue.songs[i].title}\n${serverQueue.songs[i].url}\nDuration: ${timeFormat}\n\n`;
         }
     }
     if(serverQueue.songs.length > 1) {
         embed.addFields({name: '***Up Next:***:', value: `${mystring}`});
     }
     message.channel.send(embed);
+}
+
+const time_format = (total_seconds) => {
+    const minutes = Math.floor(total_seconds/60);
+    const seconds = total_seconds - (minutes * 60);
+    const final = `${minutes}:${seconds-1}`;
+    return final
 }
